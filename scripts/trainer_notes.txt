@@ -1,0 +1,7 @@
+train:
+    1. Resume from checkpoint func
+    (self._memory_tracker.start()) #check whether to add this func
+    2. Get Trainer Class config
+    3. Mode - (train/eval) - self.is_in_train
+    4. Move to device
+    5. make resume_from_checkpoint to the model_path or resume_from_checkpoint

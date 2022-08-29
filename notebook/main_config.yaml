@@ -1,0 +1,46 @@
+#Job id
+jid: 1
+#seed to use
+seed: 9
+#lm_type
+lm_type: bert
+#
+flatten: True
+#
+field_ce: True
+#
+mlm: True
+
+mlm_prob: True
+
+data_type: card
+
+data_root: ../data/credit_card/
+
+data_fname: card_transaction.v2
+
+data_extension: 
+
+vocab_file: vocab.nb
+
+user_ids: None
+
+cached: True
+
+nrows: None
+
+output_dir: checkpoints
+
+checkpoint: 0
+
+do_train: True
+
+do_eval: True
+
+save_steps: 500
+
+stride: 5
+
+field_hs: 768
+
+skip_user: True
