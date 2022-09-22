@@ -5,14 +5,29 @@ from transformers import DataCollatorForLanguageModeling
 def _collate_batch(examples, tokenizer):
     """Collate `examples` into a batch, using the information in `tokenizer` for padding if necessary."""
     # Tensorize if necessary.
+    # return_data = examples[0]
+    # print(len(return_data))
+    # print(return_data[0].shape)
+    # print(return_data[1].shape)
+    # examples = return_data
+    #print(len(examples))
+    #examples = examples
+    #print(examples[0][0].shape)
+    
+    #print(examples[0][1])
     if isinstance(examples[0], (list, tuple)):
-        examples = [torch.tensor(e, dtype=torch.long) for e in examples]
-
+        #print('In label check')
+        labs = [torch.tensor(e[1], dtype=torch.long) for e in examples]
+        examples = [torch.tensor(e[0], dtype=torch.long) for e in examples]
+        
+    else:
+        labs = None
+    #print(labs)
     # Check if padding is necessary.
     length_of_first = examples[0].size(0)
     are_tensors_same_length = all(x.size(0) == length_of_first for x in examples)
     if are_tensors_same_length:
-        return torch.stack(examples, dim=0)
+        return torch.stack(examples, dim=0), labs
 
     # If yes, check if we have a `pad_token`.
     if tokenizer._pad_token is None:
@@ -29,7 +44,7 @@ def _collate_batch(examples, tokenizer):
             result[i, : example.shape[0]] = example
         else:
             result[i, -example.shape[0] :] = example
-    return result
+    return result, labs
 
 class TransDataCollatorForLanguageModeling(DataCollatorForLanguageModeling):
 
@@ -37,12 +52,12 @@ class TransDataCollatorForLanguageModeling(DataCollatorForLanguageModeling):
             self, examples: List[Union[List[int], torch.Tensor, Dict[str, torch.Tensor]]]
     ) -> Dict[str, torch.Tensor]:
         #batch = self._tensorize_batch(examples)
-        batch = _collate_batch(examples, self.tokenizer)
+        batch, labs = _collate_batch(examples, self.tokenizer)
         sz = batch.shape
         if self.mlm:
             batch = batch.view(sz[0], -1)
             inputs, labels = self.mask_tokens(batch)
-            return {"input_ids": inputs.view(sz), "masked_lm_labels": labels.view(sz)}
+            return {"input_ids": inputs.view(sz), "masked_lm_labels": labels.view(sz), "Ouput": labs}
         else:
             labels = batch.clone().detach()
             if self.tokenizer.pad_token_id is not None:

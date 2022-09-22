@@ -1,2 +1,8 @@
 # Dataset
 dataset/*
+*.pyc
+*.ipynb_checkpoints
+notebook/new_mode/
+notebook/new_mode1/
+notebook/sample/
+
