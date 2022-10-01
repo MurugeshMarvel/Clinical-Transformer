@@ -5,7 +5,7 @@ class TabFormerConcatEmbeddings(nn.Module):
     """TabFormerConcatEmbeddings: Embeds tabular data of categorical variables
 
         Notes: - All column entries must be integer indices in a vocabolary that is common across columns
-               - `sparse=True` in `nn.Embedding` speeds up gradient computation for large vocabs
+                - `sparse=True` in `nn.Embedding` speeds up gradient computation for large vocabs
 
         Args:
             config.ncols
@@ -68,7 +68,7 @@ class TabFormerEmbeddings(nn.Module):
                                             padding_idx=getattr(config, 'pad_token_id', 0), sparse=False)
 
         encoder_layer = nn.TransformerEncoderLayer(d_model=config.field_hidden_size, nhead=config.nhead,
-                                                   dim_feedforward=config.field_hidden_size)
+                                            dim_feedforward=config.field_hidden_size)
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=config.num_layers)
 
         self.lin_proj = nn.Linear(config.field_hidden_size * config.ncols, config.hidden_size)

@@ -37,6 +37,7 @@ class TabFormerHierarchicalLM(PreTrainedModel):
 
     def forward(self, input_ids, **input_args):
         inputs_embeds = self.tab_embeddings(input_ids)
+        print(f"** Input Args - {input_args.keys()}")
         return self.tb_model(inputs_embeds=inputs_embeds, **input_args)
 
 

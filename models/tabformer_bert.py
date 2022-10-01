@@ -113,17 +113,17 @@ class TabFormerBertForMaskedLM(BertForMaskedLM):
         )
         sequence_output = outputs[0]  # [bsz * seqlen * hidden]
         #print(f"Last hidden state - {outputs.last_hidden_state}")
-        #print(f"Last Hidden State shape {outputs.last_hidden_state.shape}")
-        #print(f"Sequence Output shape - {sequence_output.shape}")
+        print(f"Last Hidden State shape {outputs.last_hidden_state.shape}")
+        print(f"Sequence Output shape - {sequence_output.shape}")
         if not self.config.flatten:
             output_sz = list(sequence_output.size())
-            #print(f"Output shape - {output_sz}")
+            print(f"Output shape - {output_sz}")
             expected_sz = [output_sz[0], output_sz[1]*self.config.ncols, -1]
-            #print(f"Expected shape - {expected_sz}")
+            print(f"Expected shape - {expected_sz}")
             sequence_output = sequence_output.view(expected_sz)
-            #print(f"Sequence output - {sequence_output.shape}")
+            print(f"Sequence output - {sequence_output.shape}")
             masked_lm_labels = masked_lm_labels.view(expected_sz[0], -1)
-            #print(f"Masked lm labels - {masked_lm_labels.shape}")
+            print(f"Masked lm labels - {masked_lm_labels.shape}")
             
         # [bsz * seqlen * vocab_sz]
         prediction_scores = self.cls(sequence_output)
@@ -163,9 +163,12 @@ class TabFormerBertForMaskedLM(BertForMaskedLM):
             nfeas = len(global_ids_field)
             loss_fct = self.get_criterion(
                 field_name, nfeas, prediction_scores.device)
-            
-            #print(f"Prediction score for loss - {prediction_scores_field.view(-1, len(global_ids_field)).shape}")
-            #print(f"Masked score for loss - {masked_lm_labels_field_local.view(-1).shape}")
+            print('field_name', field_name)
+            print('nfeas', nfeas)
+            print("loss_fct", loss_fct)
+            print("prediction_scores.device", prediction_scores.device)
+            print(f"Prediction score for loss - {prediction_scores_field.view(-1, len(global_ids_field))}")
+            print(f"Masked score for loss - {masked_lm_labels_field_local.view(-1)}")
             
             masked_lm_loss_field = loss_fct(prediction_scores_field.view(-1, len(global_ids_field)),
                                             masked_lm_labels_field_local.view(-1))
