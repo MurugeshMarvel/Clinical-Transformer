@@ -5,7 +5,8 @@ from torch.nn import CrossEntropyLoss
 from transformers.models.bert.modeling_bert import ACT2FN
 from transformers.models.bert.modeling_bert import BertForMaskedLM
 from transformers.models.bert.configuration_bert import BertConfig
-from models.model_utils import CustomAdaptiveLogSoftmax
+from models.custom_criterion import CustomAdaptiveLogSoftmax
+
 
 class TabFormerBertConfig(BertConfig):
     def __init__(
@@ -28,6 +29,7 @@ class TabFormerBertConfig(BertConfig):
         self.vocab_size = vocab_size
         self.num_attention_heads = num_attention_heads
 
+
 class TabFormerBertPredictionHeadTransform(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -44,6 +46,7 @@ class TabFormerBertPredictionHeadTransform(nn.Module):
         hidden_states = self.transform_act_fn(hidden_states)
         hidden_states = self.LayerNorm(hidden_states)
         return hidden_states
+
 
 class TabFormerBertLMPredictionHead(nn.Module):
     def __init__(self, config):
@@ -65,6 +68,7 @@ class TabFormerBertLMPredictionHead(nn.Module):
         hidden_states = self.decoder(hidden_states)
         return hidden_states
 
+
 class TabFormerBertOnlyMLMHead(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -73,6 +77,7 @@ class TabFormerBertOnlyMLMHead(nn.Module):
     def forward(self, sequence_output):
         prediction_scores = self.predictions(sequence_output)
         return prediction_scores
+
 
 class TabFormerBertForMaskedLM(BertForMaskedLM):
     def __init__(self, config, vocab):
@@ -95,7 +100,7 @@ class TabFormerBertForMaskedLM(BertForMaskedLM):
             encoder_attention_mask=None,
             lm_labels=None,
     ):
-        ##print(f"input - {input_ids.shape}")
+        #print(f"input - {input_ids.shape}")
         outputs = self.bert(
             input_ids,
             attention_mask=attention_mask,
@@ -107,29 +112,29 @@ class TabFormerBertForMaskedLM(BertForMaskedLM):
             encoder_attention_mask=encoder_attention_mask,
         )
         sequence_output = outputs[0]  # [bsz * seqlen * hidden]
-        ##print(f"Last hidden state - {outputs.last_hidden_state}")
-        #print(f"Last Hidden State shape {outputs.last_hidden_state.shape}")
-        #print(f"Sequence Output shape - {sequence_output.shape}")
+        #print(f"Last hidden state - {outputs.last_hidden_state}")
+        print(f"Last Hidden State shape {outputs.last_hidden_state.shape}")
+        print(f"Sequence Output shape - {sequence_output.shape}")
         if not self.config.flatten:
             output_sz = list(sequence_output.size())
-            #print(f"Output shape - {output_sz}")
+            print(f"Output shape - {output_sz}")
             expected_sz = [output_sz[0], output_sz[1]*self.config.ncols, -1]
-            #print(f"Expected shape - {expected_sz}")
+            print(f"Expected shape - {expected_sz}")
             sequence_output = sequence_output.view(expected_sz)
-            #print(f"Sequence output - {sequence_output.shape}")
+            print(f"Sequence output - {sequence_output.shape}")
             masked_lm_labels = masked_lm_labels.view(expected_sz[0], -1)
-            #print(f"Masked lm labels - {masked_lm_labels.shape}")
+            print(f"Masked lm labels - {masked_lm_labels.shape}")
             
         # [bsz * seqlen * vocab_sz]
         prediction_scores = self.cls(sequence_output)
         try:
-            ##print(f"Prediction score shape - {prediction_scores.shape}")
+            #print(f"Prediction score shape - {prediction_scores.shape}")
             pass
         except:
             pass
         outputs = (prediction_scores,) + outputs[2:]
         try:
-            ##print(f"Outputs - {outputs.shape}")
+            #print(f"Outputs - {outputs.shape}")
             pass
         except:
             pass
@@ -139,11 +144,11 @@ class TabFormerBertForMaskedLM(BertForMaskedLM):
         total_masked_lm_loss = 0
 
         seq_len = prediction_scores.size(1)
-        #print('seq_len',seq_len)
         # TODO : remove_target is True for card
         field_names = self.vocab.get_field_keys(
             remove_target=True, ignore_special=False)
-        for field_idx, field_name in enumerate(field_names[:-1]):
+        #print('Feild Names',field_names)
+        for field_idx, field_name in enumerate(field_names):
             col_ids = list(range(field_idx, seq_len, len(field_names)))
             #print(f"{col_ids} for {field_name}")
             global_ids_field = self.vocab.get_field_ids(field_name)
@@ -158,24 +163,23 @@ class TabFormerBertForMaskedLM(BertForMaskedLM):
             nfeas = len(global_ids_field)
             loss_fct = self.get_criterion(
                 field_name, nfeas, prediction_scores.device)
-            #print('field_name', field_name)
-            #print('nfeas', nfeas)
-            #print("loss_fct", loss_fct)
-            #print("prediction_scores.device", prediction_scores.device)
-            #print(f"Prediction score for loss - {prediction_scores_field.view(-1, len(global_ids_field))}")
-            #print(f"Masked score for loss - {masked_lm_labels_field_local.view(-1)}")
+            print('field_name', field_name)
+            print('nfeas', nfeas)
+            print("loss_fct", loss_fct)
+            print("prediction_scores.device", prediction_scores.device)
+            print(f"Prediction score for loss - {prediction_scores_field.view(-1, len(global_ids_field))}")
+            print(f"Masked score for loss - {masked_lm_labels_field_local.view(-1)}")
+            
             masked_lm_loss_field = loss_fct(prediction_scores_field.view(-1, len(global_ids_field)),
                                             masked_lm_labels_field_local.view(-1))
-            #print(f"Loss field - {masked_lm_loss_field}")
-            ##print(f"Masked loss - {masked_lm_loss_field.shape}")
+            #print(f"Masked loss - {masked_lm_loss_field.shape}")
             total_masked_lm_loss += masked_lm_loss_field
-        ##print(f"Total Masked loss - {total_masked_lm_loss}")
-        ##print(f"Output - {outputs[2].shape}")
+        #print(f"Total Masked loss - {total_masked_lm_loss}")
+        #print(f"Output - {outputs[2].shape}")
         return (total_masked_lm_loss,) + outputs
 
     def get_criterion(self, fname, vs, device, cutoffs=False, div_value=4.0):
-        #print(f"fname - {fname}")
-        #print(f"vocab columns - {self.vocab.adap_sm_cols}")
+
         if fname in self.vocab.adap_sm_cols:
             if not cutoffs:
                 cutoffs = [int(vs/15), 3*int(vs/15), 6*int(vs/15)]
@@ -186,3 +190,39 @@ class TabFormerBertForMaskedLM(BertForMaskedLM):
             return criteria.to(device)
         else:
             return CrossEntropyLoss()
+
+
+class TabFormerBertModel(BertForMaskedLM):
+    def __init__(self, config):
+        super().__init__(config)
+
+        self.cls = TabFormerBertOnlyMLMHead(config)
+        self.init_weights()
+
+    def forward(
+            self,
+            input_ids=None,
+            attention_mask=None,
+            token_type_ids=None,
+            position_ids=None,
+            head_mask=None,
+            inputs_embeds=None,
+            masked_lm_labels=None,
+            encoder_hidden_states=None,
+            encoder_attention_mask=None,
+            lm_labels=None,
+    ):
+        outputs = self.bert(
+            input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+            position_ids=position_ids,
+            head_mask=head_mask,
+            inputs_embeds=inputs_embeds,
+            encoder_hidden_states=encoder_hidden_states,
+            encoder_attention_mask=encoder_attention_mask,
+        )
+
+        sequence_output = outputs[0]  # [bsz * seqlen * hidden]
+
+        return sequence_output

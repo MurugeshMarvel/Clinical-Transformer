@@ -6,4 +6,6 @@ notebook/new_mode/
 notebook/new_mode1/
 notebook/sample/
 notebook/sample_model/
+.DS_Store
+model_old/
 

@@ -5,16 +5,7 @@ from transformers import DataCollatorForLanguageModeling
 def _collate_batch(examples, tokenizer):
     """Collate `examples` into a batch, using the information in `tokenizer` for padding if necessary."""
     # Tensorize if necessary.
-    # return_data = examples[0]
-    # print(len(return_data))
-    # print(return_data[0].shape)
-    # print(return_data[1].shape)
-    # examples = return_data
-    #print(len(examples))
-    #examples = examples
-    #print(examples[0][0].shape)
-    
-    #print(examples[0][1])
+  
     if isinstance(examples[0], (list, tuple)):
         #print('In label check')
         labs = [torch.tensor(e[1], dtype=torch.long) for e in examples]
